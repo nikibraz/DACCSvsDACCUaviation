@@ -14,6 +14,8 @@ def run_base_analysis(rgb_colors, YEAR = 2050, SCENARIO = 'Carbon neutrality', C
                       lifetime_stack_min = 7, lifetime_stack_max = 10, DAC_c0_2020 = 870, FT_c0_2020 = 108/10**3,
                       CC_EFFICACY = 1, PRICE_CO2 = 100, PRICE_CC_IMPACTS = 100, SUBSIDY_DACCS = 100, SUBSIDY_DACCU = 0.033,
                       EXCESS_ELECTRICITY_COST = 0.003, EXCESS_ELECTRICITY_COST_NEGATIVE = 0.001, DEMAND_RATE_CAPPED = -0.001,
+                      profit_margin_stern = 0.25, fuel_share_current_short_haul = 0.25, fuel_share_current_medium_haul = 0.35,
+                      fuel_share_current_long_haul = 0.45,
                       running_demand = True, running_contrails = True,
                       plot_main_figures = True, running_SA = False, running_optimization = False, running_singlefactor_SA = False,
                       running_policy_SA = False, plotting_SA_figures = False, plotting_SI_figures = False, output_csv = True):
@@ -253,31 +255,24 @@ def run_base_analysis(rgb_colors, YEAR = 2050, SCENARIO = 'Carbon neutrality', C
     cost_fuels_per_passenger_LN_Berlin_BAU = cost_by_demand_BAU * LN_Berlin_distance / LN_Berlin_number_passengers
     cost_neutrality_per_passenger_LN_Berlin = cost_by_demand * LN_Berlin_distance / LN_Berlin_number_passengers
 
-    reference_2023_cost_LN_NY = np.average((220, 380))
-    reference_2023_cost_LN_Berlin = np.average((30, 100))
-    reference_2023_cost_LN_Perth = np.average((1300, 1700))
+    operational_cost_non_fuel_LN_Berlin = (1+profit_margin_stern) * (cost_fuels_per_passenger_LN_Berlin_BAU[0] / fuel_share_current_short_haul)
+    operational_cost_non_fuel_LN_NY = ( cost_fuels_per_passenger_LN_NY_BAU[0] / fuel_share_current_medium_haul ) * (1+profit_margin_stern)
+    operational_cost_non_fuel_LN_Perth = ( cost_fuels_per_passenger_LN_Perth_BAU[0] / fuel_share_current_long_haul ) * (1+profit_margin_stern)
 
-    fuel_share_2023_LN_NY_BAU = cost_fuels_per_passenger_LN_NY_BAU[2023 - 2020] / reference_2023_cost_LN_NY
-    fuel_share_2023_LN_Berlin_BAU = cost_fuels_per_passenger_LN_Berlin_BAU[2023 - 2020] / reference_2023_cost_LN_Berlin
-    fuel_share_2023_LN_Perth_BAU = cost_fuels_per_passenger_LN_Perth_BAU[2023 - 2020] / reference_2023_cost_LN_Perth
+    ticket_price_LN_Berlin_BAU = (operational_cost_non_fuel_LN_Berlin + cost_fuels_per_passenger_LN_Berlin_BAU)
+    ticket_price_LN_NY_BAU = (operational_cost_non_fuel_LN_NY + cost_fuels_per_passenger_LN_NY_BAU)
+    ticket_price_LN_Perth_BAU = (operational_cost_non_fuel_LN_Perth + cost_fuels_per_passenger_LN_Perth_BAU)
 
-    future_flight_price_LN_NY_BAU = cost_fuels_per_passenger_LN_NY_BAU / fuel_share_2023_LN_NY_BAU
-    future_flight_price_LN_Berlin_BAU = cost_fuels_per_passenger_LN_Berlin_BAU / fuel_share_2023_LN_Berlin_BAU
-    future_flight_price_LN_Perth_BAU = cost_fuels_per_passenger_LN_Perth_BAU / fuel_share_2023_LN_Perth_BAU
-
-    future_neutrality_flight_price_LN_NY = (
-                                                       1 - fuel_share_2023_LN_NY_BAU) * future_flight_price_LN_NY_BAU + cost_neutrality_per_passenger_LN_NY
-    future_neutrality_flight_price_LN_Berlin = (
-                                                           1 - fuel_share_2023_LN_Berlin_BAU) * future_flight_price_LN_Berlin_BAU + cost_neutrality_per_passenger_LN_Berlin
-    future_neutrality_flight_price_LN_Perth = (
-                                                          1 - fuel_share_2023_LN_Perth_BAU) * future_flight_price_LN_Perth_BAU + cost_neutrality_per_passenger_LN_Perth
+    ticket_price_LN_Berlin_neutrality = (operational_cost_non_fuel_LN_Berlin + cost_neutrality_per_passenger_LN_Berlin) * (1+profit_margin_stern)
+    ticket_price_LN_NY_neutrality = (operational_cost_non_fuel_LN_NY + cost_neutrality_per_passenger_LN_NY) * (1+profit_margin_stern)
+    ticket_price_LN_Perth_neutrality = (operational_cost_non_fuel_LN_Perth + cost_neutrality_per_passenger_LN_Perth) * (1+profit_margin_stern)
 
     increase_neutrality_flight_price_LN_NY = (
-                                                         future_neutrality_flight_price_LN_NY - future_flight_price_LN_NY_BAU) / future_flight_price_LN_NY_BAU
+                                                         ticket_price_LN_NY_neutrality - ticket_price_LN_NY_BAU) / ticket_price_LN_NY_BAU
     increase_neutrality_flight_price_LN_Berlin = (
-                                                             future_neutrality_flight_price_LN_Berlin - future_flight_price_LN_Berlin_BAU) / future_flight_price_LN_Berlin_BAU
+                                                             ticket_price_LN_Berlin_neutrality - ticket_price_LN_Berlin_BAU) / ticket_price_LN_Berlin_BAU
     increase_neutrality_flight_price_LN_Perth = (
-                                                            future_neutrality_flight_price_LN_Perth - future_flight_price_LN_Perth_BAU) / future_flight_price_LN_Perth_BAU
+                                                            ticket_price_LN_Perth_neutrality - ticket_price_LN_Perth_BAU) / ticket_price_LN_Perth_BAU
 
     # cost per liter fuel
     cost_per_liter_DACCU_CAPEX, cost_per_liter_DACCS_CAPEX, \
@@ -1209,7 +1204,7 @@ def run_base_analysis(rgb_colors, YEAR = 2050, SCENARIO = 'Carbon neutrality', C
                                         what='Change flight price', scenario='Carbon neutrality', palette=PALETTE,
                                         stacked=False)
 
-        # FIGURE 4 - variations in demand and contrail mitigation
+        # FIGURE 4 - variations in demand and contrail mitiggc at                ion
         prepped_DAC_CDR_CO2_variations = prep_data_bardata(DAC_CDR_CO2_Gt[1,:,:],
                                                    DAC_CDR_CO2_Gt_stagnating[1,:,:],
                                                    DAC_CDR_CO2_Gt_decreasing[1,:,:],
@@ -2814,7 +2809,7 @@ def run_base_analysis(rgb_colors, YEAR = 2050, SCENARIO = 'Carbon neutrality', C
             LEARNING_RATE_electrolysis_endogenous, LEARNING_RATE_CO, LEARNING_RATE_DAC,
             ELECTRICITY_COST_KWH, FF_MARKET_COST, CO2_TRANSPORT_STORAGE_COST,
             DAC_q0_Gt_2020, DAC_c0_2020, H2_q0_Mt_2020, H2_c0_2020, CO_q0_Mt_2020, CO_c0_2020,
-            JETFUEL_ALLOCATION_SHARE, CC_EFFICACY, vars_to_analyze, "DACCS", reference="DACCU",
+            JETFUEL_ALLOCATION_SHARE, CC_EFFICACY, vars_to_analyze, "DACCU", reference="DACCS",
             scenario="climate neutrality", configuration_PtL=CONFIGURATION)
 
         optimization_DACCUvsBAU_zerocarbon = run_sensitivity_analysis_all_variables(
@@ -2840,20 +2835,20 @@ def run_base_analysis(rgb_colors, YEAR = 2050, SCENARIO = 'Carbon neutrality', C
 
         if plotting_SA_figures is True:
             # Call the function
-            combined_plot(DACCS_DACCU_finalcost_difference_SA_zerocarbon, optimization_DACCUvsDACCS_zerocarbon,
-                          '+100%', '-100%', standard_values,  # original_diff_zerocarbon / 10 ** 12,
-                          hue_scatter='Change in DACCU cost penalty (%)',
-                          neutrality='Carbon neutrality', comparison='DACCS')
+            #combined_plot(DACCS_DACCU_finalcost_difference_SA_zerocarbon, optimization_DACCUvsDACCS_zerocarbon,
+            #              '+70%', '-70%', standard_values,  # original_diff_zerocarbon / 10 ** 12,
+            #              hue_scatter='Change in DACCU cost penalty (%)',
+            #              neutrality='Carbon neutrality', comparison='DACCS')
+            #combined_plot(DACCS_DACCU_finalcost_difference_SA_neutrality, optimization_DACCUvsDACCS_climneutrality,
+            #              '+70%', '-70%', standard_values,  # original_diff_climneutrality / 10 ** 12,
+            #              hue_scatter='Change in DACCS cost penalty (%)',
+            #              neutrality='Climate neutrality', comparison='DACCU', reference='DACCS')
+            #combined_plot(FF_DACCU_finalcost_difference_SA_zerocarbon, optimization_DACCUvsBAU_zerocarbon,
+            #              '+70%', '-70%', standard_values,  # original_diff_zerocarbon / 10 ** 12,
+            #              hue_scatter='Change in DACCU cost penalty (%)',
+            #              neutrality='Carbon neutrality', comparison='BAU', reference='DACCU')
             combined_plot(DACCS_DACCU_finalcost_difference_SA_neutrality, optimization_DACCUvsDACCS_climneutrality,
-                          '+100%', '-100%', standard_values,  # original_diff_climneutrality / 10 ** 12,
-                          hue_scatter='Change in DACCS cost penalty (%)',
-                          neutrality='Climate neutrality', comparison='DACCU', reference='DACCS')
-            combined_plot(FF_DACCU_finalcost_difference_SA_zerocarbon, optimization_DACCUvsBAU_zerocarbon,
-                          '+100%', '-100%', standard_values,  # original_diff_zerocarbon / 10 ** 12,
-                          hue_scatter='Change in DACCU cost penalty (%)',
-                          neutrality='Carbon neutrality', comparison='BAU', reference='DACCU')
-            combined_plot(DACCS_DACCU_finalcost_difference_SA_neutrality, optimization_DACCUvsDACCS_climneutrality,
-                          '+100%', '-100%', standard_values,  # original_diff_zerocarbon / 10 ** 12,
+                          '+70%', '-70%', standard_values,  # original_diff_zerocarbon / 10 ** 12,
                           hue_scatter='Change in DACCS cost penalty (%)', percentage_penalty_change=True,
                           neutrality='Climate neutrality', comparison='DACCU', reference='DACCS')
 

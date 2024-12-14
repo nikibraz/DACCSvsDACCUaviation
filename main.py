@@ -57,6 +57,12 @@ FT_c0_2020 = 108/10**3 # €/kgfuel  # CAPEX of FT from Becattini et al. 2018
 # Contrail cirrus efficacy
 CC_EFFICACY = 1.
 
+# Aviation fuel share of operating costs and gross profit margin
+PROFIT_MARGIN = 0.25  # pre-tax : https://pages.stern.nyu.edu/~adamodar/New_Home_Page/datafile/margin.html
+FUEL_SHARE_SHORT_HAUL = 0.25  # based on Ringbeck et al. 2009
+FUEL_SHARE_MEDIUM_HAUL = 0.35  # based on Ringbeck et al. 2009
+FUEL_SHARE_LONG_HAUL = 0.45  # based on Ringbeck et al. 2009
+
 # Price on emissions and other policy parameters
 PRICE_CO2 = 100 # €/tCO2
 PRICE_CC_IMPACTS = 100  # €/tCO2eq*
@@ -79,7 +85,7 @@ running_optimization = True
 running_singlefactor_SA = True
 running_policy_SA = False
 plotting_SA_figures = True
-plotting_SI_figures = False
+plotting_SI_figures = True
 output_csv = True
 
 # run
@@ -94,6 +100,7 @@ run_base_analysis(rgb_colors, YEAR, SCENARIO, CONFIGURATION, PROGRESSION_CURVE,
                       lifetime_stack_min, lifetime_stack_max, DAC_c0_2020, FT_c0_2020,
                       CC_EFFICACY, PRICE_CO2, PRICE_CC_IMPACTS, SUBSIDY_DACCS, SUBSIDY_DACCU,
                       EXCESS_ELECTRICITY_COST, EXCESS_ELECTRICITY_COST_NEGATIVE, DEMAND_RATE_CAPPED,
+                      PROFIT_MARGIN, FUEL_SHARE_SHORT_HAUL, FUEL_SHARE_MEDIUM_HAUL, FUEL_SHARE_LONG_HAUL,
                       running_demand, running_contrails,
                       plot_main_figures, running_SA, running_optimization, running_singlefactor_SA,
                       running_policy_SA, plotting_SA_figures, plotting_SI_figures, output_csv)
